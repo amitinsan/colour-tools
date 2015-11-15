@@ -1,0 +1,148 @@
+<!doctype html>
+
+<html lang="en" ng-app="colour">
+
+<head>
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js"></script>
+	<style>
+		.spectrum .row {
+			line-height: 0;
+		}
+		
+		.spectrum .cell {
+			width: 30px;
+			height: 30px;
+			display: inline-block;
+		}
+	</style>
+</head>
+
+<body ng-controller="MainController">
+	
+	<input type="text" ng-model="steps" />
+	<input type="text" ng-model="startHex" />
+	<input type="text" ng-model="endHex" />
+	<input type="text" ng-model="baseHex" />
+	
+	<div spectrum steps="steps" start-hex="startHex" end-hex="endHex" base-hex="baseHex"></div>
+	
+	<script>
+		angular.module('colour', []);
+		
+		angular.module('colour').directive('spectrum', [function () {
+		
+			return {
+				restrict: 'A',
+				scope: {
+					steps: '=',
+					startHex: '=',
+					endHex: '=',
+					baseHex: '='
+				},
+				replace: true,
+				template: `
+					<div class="spectrum">
+						<div ng-repeat="row in colors track by $index" class="row">
+							<div ng-repeat="cell in row track by $index" class="cell" style="background-color:{{cell}}">
+							</div>	
+						</div>
+					</div>
+				`,
+				
+				link: function ($scope, elm, attrs) {
+		
+					$scope.$watch('steps', function () {
+						if ($scope.steps > 0) {
+							$scope.colors = generateColors();
+						}			
+					});
+					
+					$scope.$watch('startHex', function () {
+						if ($scope.startHex.length != 6) return;
+						$scope.colors = generateColors();			
+					});
+		
+					$scope.$watch('baseHex', function () {
+						if ($scope.baseHex.length != 6) return;
+						$scope.colors = generateColors();			
+					});
+		
+					$scope.$watch('endHex', function () {
+						if ($scope.endHex.length != 6) return;
+						$scope.colors = generateColors();			
+					});
+		
+					function generateColors () {
+						
+						var colors = [],
+							startRgb = hexToRgb($scope.startHex),
+							endRgb = hexToRgb($scope.endHex),
+							baseRgb = hexToRgb($scope.baseHex),
+							row,
+							j,
+							i;
+							
+						var dxr = (startRgb.r - endRgb.r) / ($scope.steps - 1),
+							dxg = (startRgb.g - endRgb.g) / ($scope.steps - 1),
+							dxb = (startRgb.b - endRgb.b) / ($scope.steps - 1);
+							
+						for (j = 0; j < $scope.steps; j++) {
+			
+							for (i = 0; i < $scope.steps; i++) {
+								if (i == 0) {
+									row = [];
+								}
+									
+								var dyr = (startRgb.r - (i * dxr) - baseRgb.r) / ($scope.steps - 1),
+									dyg = (startRgb.g - (i * dxg) - baseRgb.g) / ($scope.steps - 1),
+									dyb = (startRgb.b - (i * dxb) - baseRgb.b) / ($scope.steps - 1);
+									
+								var r = Math.round(startRgb.r - (i * dxr) - (j * dyr)),
+									g = Math.round(startRgb.g - (i * dxg) - (j * dyg)),
+									b = Math.round(startRgb.b - (i * dxb) - (j * dyb));
+																
+								row.push(rgbToHex(r, g, b));
+							}
+							colors.push(row);
+						}
+						
+						return colors;				
+					}
+		
+		
+					// Sourced from: http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+					function componentToHex(c) {
+						var hex = c.toString(16);
+						return hex.length == 1 ? '0' + hex : hex;
+					}
+					
+					function rgbToHex(r, g, b) {
+						return '#' + componentToHex(r) + componentToHex(g) + componentToHex(b);
+					}
+					
+					function hexToRgb(hex) {
+						var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+						return result ? {
+							r: parseInt(result[1], 16),
+							g: parseInt(result[2], 16),
+							b: parseInt(result[3], 16)
+						} : null;
+					}
+				}
+			};
+			
+		}]);
+		
+		angular.module('colour').controller('MainController', ['$scope', function ($scope) {
+			
+			$scope.steps = 32;
+			$scope.startHex = 'ffffff';
+			$scope.endHex = 'b71234';
+			$scope.baseHex = '26040c';
+		}]);		
+	</script>
+	
+</body>
+
+</html>
